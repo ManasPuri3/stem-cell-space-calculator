@@ -1,0 +1,308 @@
+PRODUCT REQUIREMENTS DOCUMENT
+Stem Cell Manufacturing in Microgravity Feasibility Calculator
+Version 1.0 | 24 October 2026
+
+1. PURPOSE AND PRODUCT DECISION
+
+Build an interactive research calculator that compares the manufacturing cost of equivalent functional stem-cell output on Earth and in orbit. Users adjust biological and economic assumptions, attach research evidence, specify uncertainty ranges, and run reproducible simulations. The application identifies when space production is cheaper, what yield improvement is required, and which assumptions drive the answer.
+
+This application supports a short research paper. It is a transparent scenario model, not a validated forecast, clinical decision tool, or investment recommendation. A successful product can conclude that the evidence is insufficient or that Earth production is cheaper. It must not be designed to produce a favorable answer for space.
+
+Primary research question: Under what biological and economic conditions could microgravity reduce the cost of manufacturing functional stem cells?
+
+Separate two questions throughout the interface:
+(a) Production advantage: Is space production cheaper per equivalent functional output before outbound and return transport?
+(b) Delivered advantage: Does it remain cheaper after transport, recovery, and post-return losses?
+
+The first comparison still includes orbital facility and equipment costs. It is not proof of an intrinsic microgravity effect. Show the biological yield ratio separately; causal attribution requires controlled experiments.
+
+2. USER AND DELIVERABLE
+
+Primary user: a student or researcher with limited statistics knowledge preparing a defensible paper about space manufacturing.
+Secondary user: a reviewer who wants to inspect the assumptions, reproduce results, and distinguish evidence from speculation.
+
+Deliver a working browser application, source code, meaningful automated tests, an example scenario, and a README explaining setup, formulas, limitations, and deployment. It must work locally without API keys or a backend. Do not stop at a static mockup. Follow an existing repository's conventions if one is provided. Otherwise use React and TypeScript with a lightweight build tool and a maintained chart library; choose current compatible dependency versions during implementation and commit a lockfile.
+
+Default biological target: human hematopoietic stem cells (HSCs). Make clear that mouse embryonic stem cells, human HSCs, and induced pluripotent stem cells are not interchangeable. V1 is a single-product comparator, not a universal model for all cell therapies.
+
+3. SCOPE
+
+Required in V1:
+- Deterministic Earth versus space comparison.
+- Adjustable costs, biological performance, output qualification, and transport losses.
+- An evidence record attached to every input, including unsupported inputs.
+- Fixed, uniform, triangular, and bounded discrete uncertainty distributions.
+- Seeded Monte Carlo simulation with explicit conditional interpretation.
+- Paired Earth and space scenarios and selected dependency rules.
+- Break-even analysis, cost distributions, sensitivity analysis, and scenario heatmap.
+- Local scenario persistence, JSON import/export, CSV result export, and print-friendly summary.
+- Accessible desktop and mobile interfaces.
+
+Not required in V1:
+- Automated paper searching, PDF extraction, or AI-generated probabilities.
+- User accounts, cloud storage, payments, live launch quotes, or external APIs.
+- Automated clinical qualification or regulatory assessment.
+- Claims about market price, profit, clinical efficacy, or treatment availability.
+- Full discounted cash-flow, orbital mechanics, radiation damage, or biological growth simulation.
+- Arbitrary correlation matrices, Bayesian inference, or automatic meta-analysis.
+
+A future version may add literature extraction and more sophisticated statistical dependencies. Do not hide incomplete V1 functionality behind decorative controls.
+
+4. EXPERIENCE AND INFORMATION ARCHITECTURE
+
+Use a restrained research-dashboard design with a light background, readable typography, and one accent color. Avoid space-themed decoration, promotional copy, excessive cards, and a giant success probability gauge. Display units next to values. Use scientific notation for large cell counts, with readable equivalents on demand. Do not rely on red/green alone.
+
+Provide five main views:
+1. Overview: research question, current scenario, deterministic results, simulation status, key limitations.
+2. Assumptions: Earth, space biology, operations, transport, and uncertainty settings.
+3. Evidence: sources, extracted findings, limitations, and parameter links.
+4. Results: comparisons, distributions, break-even analysis, sensitivity, and exports.
+5. Methods: equations, definitions, distribution explanations, and interpretation rules.
+
+The initial screen must explain the model in plain language and offer 'Load illustrative example' and 'Start an empty scenario'. The illustrative example must be unmistakably hypothetical. It must not be named 'research-backed baseline'. Do not show a simulation percentage until a simulation has been run.
+
+Primary workflow:
+- Select or create a scenario and define the product/output unit.
+- Review the Earth baseline.
+- Enter orbital costs and biological assumptions.
+- Attach evidence or mark an assumption as unsupported.
+- Choose fixed values or uncertainty distributions.
+- Inspect a deterministic preview.
+- Run the simulation.
+- Review conditional results, limits, and important assumptions.
+- Save a scenario or export an analysis for the paper.
+
+Support a simple mode with a small group of major inputs and an advanced mode exposing the complete model. Both modes use the same engine. Never silently replace advanced values when changing modes.
+
+5. PRODUCT AND OUTPUT DEFINITION
+
+Define equivalent output before comparing costs. Default accounting unit: one million functional HSC-equivalent cells meeting the user-defined qualification criteria. This is an accounting unit, not a clinically established dose or validated assay definition.
+
+Require a product-definition note specifying cell source, desired function, quality criteria, and the method proposed for measuring functional output. The app cannot establish equivalence from counts alone. Include a status: 'equivalence assumed', 'partially supported', or 'supported by attached evidence'. This is user-entered and never an automatic clinical judgment.
+
+Show an explicit warning when equivalence is assumed: 'Cost comparisons assume that the two processes produce biologically equivalent qualified output.'
+
+Do not default to treatment doses. An optional dose view may be enabled only after the user supplies cells per dose and a documented rationale. It must remain labeled an assumed conversion, not treatment capacity established by this app.
+
+6. MODEL DEFINITIONS AND EQUATIONS
+
+All costs use one user-selected currency and price year. Default USD, 2026. No automatic currency conversion or inflation adjustment. Records imported from other years must be flagged unless the user documents a conversion.
+
+For each paired scenario draw, define:
+N0_E, N0_S = viable starting cell counts for Earth and space.
+g_E = gross Earth expansion factor, final cells divided by starting cells.
+r_g = space-to-Earth gross expansion ratio.
+g_S = g_E * r_g.
+q_E = fraction of final Earth cells meeting the defined functional qualification.
+r_q = space-to-Earth qualification fraction ratio.
+q_S = q_E * r_q.
+s = retention of qualified space output through return, storage, and handling.
+p_E, p_S = probabilities that a batch is successful and releasable.
+U = cells per reporting unit, default 1,000,000.
+
+Conditional output from a successful batch:
+Y_E = N0_E * g_E * q_E / U.
+Y_S_pre = N0_S * g_S * q_S / U.
+Y_S = Y_S_pre * s.
+
+Long-run expected usable output per attempted batch:
+Q_E = p_E * Y_E.
+Q_S_pre = p_S * Y_S_pre.
+Q_S = p_S * Y_S.
+
+q describes cell-level qualification within a successful batch. p describes whole-batch release failure. Explain the distinction to prevent double-counting. s includes return-related loss of function as well as viability when appropriate. Never multiply by a second survival factor for the same loss.
+
+In default paired mode, N0_S = N0_E. Allow separate starting counts in advanced mode; clearly label that raw output differences then cannot be attributed entirely to microgravity.
+
+Cost categories, per attempted batch:
+C_E_prod = starting-cell acquisition + consumables + labor + facility allocation + equipment allocation + quality testing + other Earth production cost.
+C_S_prod = starting-cell acquisition + consumables + operations/labor + orbital facility allocation + equipment allocation + quality testing + other space production cost.
+C_launch = L * M, where L is currency/kg and M is total allocated launched mass in kg.
+C_E_del = C_E_prod + Earth delivery cost.
+C_S_del = C_S_prod + C_launch + return and recovery cost + other delivery cost.
+
+Model costs as expected expenditure per attempted batch, including expenditure on failed attempts. V1 assumes the entered expenditure is incurred per attempt. Where failures avoid some costs, users must enter a documented expected cost; the engine does not infer failure timing. Include an explicit future-improvement note for staged failures.
+
+Equipment allocation must include capital recovery and financing where applicable. Users can enter an allocation directly or use a helper: lifecycle allocated cost divided by expected batches. Do not add both. The same rule applies to fixed transport booking fees: include them in one named line item only.
+
+Production costs per equivalent output:
+c_E_prod = C_E_prod / Q_E.
+c_S_prod = C_S_prod / Q_S_pre.
+Delivered costs:
+c_E = C_E_del / Q_E.
+c_S = C_S_del / Q_S.
+Relative savings = 1 - c_S / c_E, when c_E is positive and both outputs are positive.
+Space is strictly cheaper when c_S < c_E. Report equality separately using a documented numerical tolerance, not arbitrary rounding.
+
+The production/delivery comparison is useful but conditional: post-return loss is excluded only from the pre-return production metric. The delivered metric is the primary headline.
+
+IMPORTANT STATISTICAL INTERPRETATION
+Each Monte Carlo draw represents a possible set of uncertain underlying assumptions. Compute cost as expected expenditure divided by expected qualified output within that draw. Do not simulate a single failed batch, assign it infinite cost, and average those single-batch ratios. A future portfolio-risk mode may simulate realized sequences of batches separately.
+
+7. BREAK-EVEN ANALYSIS
+
+For fixed non-launch assumptions, maximum launch price is:
+L_max = (c_E * Q_S - C_S_prod - C_return - C_other_delivery) / M.
+
+For M > 0 and L_max < 0, show 'Not competitive even with free outbound launch under these assumptions.' For M = 0, show that launch price is not applicable; do not divide by zero.
+
+For fixed positive N0_S, g_E, q_S, s, p_S and c_E, gross expansion-ratio threshold is:
+r_g_min = C_S_del * U / (c_E * p_S * N0_S * g_E * q_S * s).
+
+Interpret this threshold as holding qualification, survival, costs, and other variables fixed. If a configured dependency makes cost or qualification change with r_g, disable the closed-form threshold and solve numerically over a disclosed user-selected range. If there is no crossing, show 'No break-even point in the searched range'. Do not extrapolate a crossing.
+
+Also show a simpler required expected-output ratio: Q_S/Q_E must exceed C_S_del/C_E_del when both costs are positive. Label differences in starting material if present.
+
+8. TIME, MASS, AND DEPENDENCIES
+
+Do not assume every input is independent. Provide explicit, inspectable dependency rules in V1:
+- Derive g_S from g_E and r_g; never independently sample all three.
+- Derive q_S from q_E and r_q; never independently sample all three.
+- Optional duration costing: fixed production cost plus daily operating cost times batch days, separately for Earth and space. Replace relevant manually entered operating costs rather than adding them twice.
+- Optional supply mass: fixed allocated hardware/packaging mass plus supply kg/day times batch days. If selected, replace direct M input.
+- Optional discrete joint scenarios for linked biology: each named profile contains r_g, r_q, s, duration and, optionally, batch release probability; weights must sum to one. Choose a profile jointly so combinations remain coherent. Disable separate distributions for profile-controlled inputs.
+
+All remaining stochastic inputs are independent unless otherwise stated. Display that assumption in Methods and the exported report. Do not invent a growth-duration relationship. Joint profiles or fixed scenario comparisons are the supported way to explore it.
+
+Expose batch duration and show qualified output per reactor-day as a secondary metric. A lower cost per batch is not automatically a throughput advantage.
+
+9. UNCERTAINTY AND EVIDENCE
+
+Every adjustable parameter has:
+- Stable ID, label, definition, unit, point estimate, distribution type and parameters.
+- Evidence status: measured in the target system; measured in another system; engineering estimate; expert judgment; or speculative scenario.
+- Source IDs, mapping rationale, limitations, author/date of entry, and notes.
+- Uncertainty interpretation: parameter uncertainty, batch variability, or a scenario range. V1 headline simulations use uncertain long-run parameters. Observed batch variability must not be silently interpreted as uncertainty in the mean.
+
+Distribution options:
+Fixed: one value.
+Uniform: user-selected minimum and maximum with equal density; not a claim that a paper establishes equal likelihood.
+Triangular: minimum, mode, maximum; user judgment unless supported by an explicit derivation.
+Discrete: bounded named values or joint profiles with explicit nonnegative weights summing to one.
+
+Do not automatically translate evidence quality into a standard deviation or probability. Do not map a p-value to the probability a manufacturing hypothesis is true. Do not treat reported standard deviations as standard errors. If data are insufficient, offer unweighted scenario comparisons rather than forcing probabilities.
+
+Evidence records include title, authors if verified, year, DOI/URL, source type, species, cell type, actual versus simulated microgravity, duration, comparator, measured outcome, sample size when reported, effect estimate/units when reported, and limitations. Unavailable fields read 'not extracted', not zero.
+
+Allow supportive, mixed, contradictory, and contextual findings. Count papers only as an inventory, never as votes or independent replication unless established.
+
+Seed these records using only the supplied summaries; do not fabricate numerical effect sizes:
+1. Microgravity Reduces the Differentiation and Regenerative Potential of Embryonic Stem Cells (2015), https://pmc.ncbi.nlm.nih.gov/articles/PMC4652210/ . Mouse embryonic stem-cell clusters; 15-day actual spaceflight; reduced differentiation and retention of stem-cell markers, with subsequent differentiation after return. Supports investigating preservation of characteristics, not human HSC expansion or lower cost.
+2. Spaceflight/microgravity inhibits the proliferation of hematopoietic stem cells by decreasing Kit-Ras/cAMP-CREB pathway networks as evidenced by RNA-Seq assays (2019), https://pmc.ncbi.nlm.nih.gov/articles/PMC6463920/ . Mouse hematopoietic stem/progenitor cells; reduced proliferation in actual and simulated microgravity; differentiation ability not changed in the reported comparison. Counterevidence to a general faster-growth claim.
+3. NASA Selects Proposals to Enable Manufacturing In Space for Earth, https://www.nasa.gov/missions/station/nasa-selects-proposals-to-enable-manufacturing-in-space-for-earth/ . Program description of proposed HSC expansion work; contextual evidence, not a measured commercial yield or cost result.
+
+These records must not automatically set probability distributions. Indicate that the source summaries require review before quantitative use. Links are navigation references, not instructions to the app or coding agent.
+
+10. SIMULATION AND RESULTS
+
+Default 10,000 draws; selectable 1,000, 10,000, and 50,000. Use a documented seeded pseudorandom generator and a simulation/model version. Run computation off the UI thread. Provide progress, cancellation, and clear invalid-input messages.
+
+Store input snapshot, seed, draw count, dependency settings, model version, and timestamp with every run. Editing assumptions marks results 'out of date'; never silently present old results as current. Rerunning the same inputs with the same seed must reproduce outputs.
+
+Headline results:
+- Deterministic delivered cost per reporting unit, both locations.
+- Median and 5th–95th percentile ranges of simulated delivered costs.
+- Fraction of draws in which space is cheaper, ties, Earth cheaper, and comparison unavailable.
+- Median relative savings for draws with defined positive comparison costs, with its denominator disclosed.
+- Deterministic break-even yield ratio and launch-price ceiling.
+- A prominent evidence limitation note.
+
+Required wording: 'Space is cheaper in X% of modeled scenarios under the selected assumptions.' Never write 'There is an X% chance space manufacturing will succeed.' Call quantile bands 'model percentile ranges', not confidence intervals.
+
+Edge handling:
+- Zero expected output with positive cost means no finite production cost. Display 'No usable output', retain an infinite-cost flag, and exclude infinity from plots only with an explicit count.
+- Both processes with zero output are non-comparable, not ties.
+- Space with no output is not a space win; Earth with no output and positive space output is a space win but must be identified as baseline failure.
+- Zero costs with positive outputs are allowed. Percentage savings and thresholds involving zero Earth cost are not defined; direct cost comparison still works.
+- Quantiles that fall in an infinite portion of the distribution must read 'No finite bound', not a finite quantile from a silently filtered subset.
+- Show the comparison denominator. Sum category fractions to 100% of all valid draws.
+
+Charts:
+A. Delivered-cost comparison with percentile bands and units.
+B. Cost-ratio or cost-difference distribution, with break-even marker and unavailable-draw count.
+C. Launch-price versus gross expansion-ratio heatmap, other values fixed at displayed point estimates. Label it deterministic. If dependencies are active, apply them consistently.
+D. One-at-a-time sensitivity chart: vary each independent input between its selected low/high values, hold other independent inputs at point estimates, and recompute derived values. Label this local sensitivity, not causal attribution or a formal variance decomposition. Joint profiles are varied as profiles.
+
+Provide accessible text/table equivalents. Every chart includes assumptions or a link to the exact snapshot. Do not mix a probabilistic chart with a deterministic chart without clear labels.
+
+11. ILLUSTRATIVE DEFAULTS AND CHECK CASES
+
+All following numbers are hypothetical demonstration inputs, not literature estimates or clinical dose definitions.
+
+U = 1,000,000 cells per output unit.
+N0_E = N0_S = 1,000,000 starting cells.
+g_E = 20; r_g = 2.
+q_E = 0.5; r_q = 1; hence q_S = 0.5.
+s = 0.8; p_E = p_S = 1.
+C_E_prod = $100,000; Earth delivery = $0.
+C_S_prod = $200,000.
+L = $2,000/kg; M = 50 kg.
+Return and recovery = $50,000; other delivery = $0.
+
+Expected deterministic result:
+Earth output = 10 units; space pre-return output = 20 units; delivered space output = 16 units.
+Earth delivered cost = $10,000/unit.
+Space production cost = $10,000/unit before return losses/transport.
+Space delivered cost = $350,000/16 = $21,875/unit.
+Relative delivered savings = -118.75%.
+Break-even r_g = 4.375, holding other parameters fixed.
+At r_g = 5, space delivered output = 40 units; delivered cost = $8,750/unit; savings = 12.5%; maximum launch price = $3,000/kg.
+At baseline r_g = 2, maximum launch price = -$1,800/kg; show not competitive even with free launch.
+
+These defaults deliberately do not imply space is advantageous. To demonstrate uncertainty, provide an optional preset with r_g triangular(min=1, mode=2, max=6), all other values fixed. Label this a subjective illustrative distribution unrelated to a measured study effect. In this preset, the analytic probability r_g > 4.375 is 13.203125%; a large simulation should approximately reproduce it. Do not present that number as a biological forecast.
+
+12. VALIDATION AND MODEL SAFETY
+
+Costs, masses, starting counts, and expansion factors cannot be negative. Permit expansion below one to represent net loss. Fractions and probabilities must be within [0,1]. Reporting unit U must be positive. Durations must be positive when used for throughput. Distributions require ordered finite bounds and valid modes/weights.
+
+q_S must remain within [0,1]. Never silently clip q_E*r_q at one or rejection-sample invalid draws, because that changes the intended model. For independent bounded distributions, validate their maximum support product before running; for joint profiles, validate each profile. Show how to fix incompatible assumptions.
+
+Validate all imported scenarios against a versioned schema. Reject NaN, infinity in inputs, malformed weights, unknown unsafe expressions, and oversized files. Escape notes and imported text. Do not evaluate user-supplied JavaScript formulas. Keep local data local and do not fetch reference URLs automatically.
+
+13. DATA, EXPORTS, AND REPRODUCIBILITY
+
+Use TypeScript models for Scenario, ProductDefinition, Parameter, Distribution, EvidenceRecord, DependencyRule, SimulationSettings, RunSnapshot, and SimulationResult. Keep the numerical engine pure and separate from components and storage.
+
+A Scenario must contain a schema version, stable ID, name, notes, currency/year, product definition, parameters, evidence, dependencies, settings, and modified timestamp. Runs reference an immutable input snapshot. Evidence records link to parameter IDs; parameters can link to multiple sources.
+
+Persist scenarios locally using IndexedDB or a similarly suitable browser store. Provide duplicate, rename, delete with confirmation, and restore defaults. Show a plain note that browser storage can be cleared and JSON export is the portable backup.
+
+JSON export includes complete assumptions, evidence, dependencies, and run configuration. CSV export includes draw ID, sampled effective inputs, expected outputs, costs, comparison category, and undefined/infinite flags. Use blank numeric fields plus status columns rather than putting 'Infinity' in numeric columns. Do not export private browser metadata.
+
+A print-friendly report must include research question, scenario name, date, product definition, model version, units, point estimates, distribution parameters, evidence classifications, dependencies, seed/draw count, result summaries, charts, limitations, and references. It must explicitly distinguish illustrative values from measured inputs. Browser print-to-PDF is acceptable in V1. Chart export as SVG or PNG is desirable.
+
+14. ACCEPTANCE TESTS
+
+The implementation is complete only when:
+1. The deterministic example reproduces all results in section 11 within floating-point tolerance.
+2. Setting r_g=5 returns $8,750/unit and 12.5% delivered savings.
+3. Equal process inputs, no added transport, and s=1 produce equal costs.
+4. Increasing launch price alone never reduces delivered space cost.
+5. Lowering retention alone never improves delivered space cost with other inputs fixed.
+6. Zero launch price does not remove return or orbital production costs.
+7. With all inputs fixed, every simulation draw matches the deterministic result.
+8. A fixed seed and identical model settings reproduce identical results, including through export/import.
+9. A sufficiently large run of the triangular example approximates 13.203125% within a documented sampling tolerance; use a deterministic seed for the test.
+10. Incompatible qualification ranges fail validation before simulation.
+11. Zero-output cases are categorized and reported correctly without crashing charts or hiding them from denominators.
+12. Linked parameters recompute exactly once and operating costs/mass are not double-counted.
+13. Changing an input marks prior results stale.
+14. JSON import/export preserves assumptions, citations, and distributions without changing numerical results.
+15. The central workflow works with keyboard navigation and on a 390-pixel-wide viewport.
+16. The app remains interactive during 50,000 draws on a typical laptop; cancellation works. Record observed performance instead of asserting an untested timing guarantee.
+17. No source automatically creates an unsupported distribution or a claim of clinical equivalence.
+18. The printed report is readable, contains units and limitations, and does not clip charts.
+
+Test the engine with unit tests, the main workflow with integration/end-to-end tests, and inspect the interface visually at desktop and mobile sizes. Include numerical boundary cases; avoid tests that merely duplicate implementation code.
+
+15. IMPLEMENTATION ORDER AND HANDOFF
+
+Phase 1: Define types, validation, pure equations, illustrative scenario, and deterministic tests.
+Phase 2: Build assumptions interface, product definition, evidence records, and deterministic results.
+Phase 3: Add seeded simulation in a worker, dependency support, and edge-case reporting.
+Phase 4: Add charts, sensitivity, break-even exploration, persistence, and exports.
+Phase 5: Complete accessibility, print layout, tests, README, and review numerical wording.
+
+Choose reasonable implementation details without asking the user about routine decisions. Document any material deviation from this specification. Do not invent studies, numerical effects, treatment definitions, or favorable results to fill gaps. If a requested feature cannot be completed, identify it explicitly in the handoff rather than presenting a placeholder as functional.
+
+The final handoff should state how to run the app, what was built, what was tested, and the remaining limitations. The application must allow the research conclusion to remain uncertain: its purpose is to make the assumptions inspectable and the break-even requirements measurable.

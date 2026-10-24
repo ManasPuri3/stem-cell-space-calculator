@@ -1,0 +1,63 @@
+:root {
+  --bg: #fbfbfa; --fg: #1b1b1b; --muted: #5a5a5a; --line: #d9d9d6; --accent: #1f5fa8; --accent-soft: #e6eef8;
+  --warn-bg: #fff6e0; --warn-line: #c98a00; --err: #a1001c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+header { padding: 16px; border-bottom: 1px solid var(--line); background: #fff; }
+h1 { font-size: 1.3rem; margin: 0 0 4px; }
+h2 { font-size: 1.1rem; margin: 24px 0 8px; }
+h3 { font-size: 1rem; margin: 16px 0 6px; }
+.sub, .note { color: var(--muted); font-size: 0.9rem; }
+nav { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+nav button { border: 1px solid var(--line); background: #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; font: inherit; }
+nav button[aria-selected="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+main { padding: 0 16px 48px; max-width: 1100px; margin: 0 auto; }
+button { font: inherit; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.choices button, .simctl button { padding: 8px 14px; border: 1px solid var(--accent); background: #fff; color: var(--accent); border-radius: 4px; cursor: pointer; }
+.choices button:hover, .simctl button:hover:not(:disabled) { background: var(--accent-soft); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #f2a900; outline-offset: 1px; }
+.warn { background: var(--warn-bg); border-left: 4px solid var(--warn-line); padding: 8px 12px; margin: 12px 0; }
+.err { color: var(--err); }
+.errbox { background: #fdecef; border-left: 4px solid var(--err); padding: 8px 12px; margin: 8px 0; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; background: #fff; margin: 8px 0; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f2f2f0; font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+input[type=number] { width: 9.5em; padding: 3px 4px; font: inherit; }
+select { padding: 3px; font: inherit; }
+.simctl { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.simctl button:disabled { opacity: 0.4; cursor: default; }
+.stale { background: var(--warn-bg); border: 1px dashed var(--warn-line); padding: 8px 12px; margin: 8px 0; font-weight: 600; }
+.headline { font-size: 1.05rem; font-weight: 600; }
+.evidence { background: #fff; border: 1px solid var(--line); padding: 10px 12px; margin: 8px 0; overflow-wrap: anywhere; }
+.tag { display: inline-block; font-size: 0.8rem; padding: 1px 6px; border: 1px solid var(--line); border-radius: 10px; margin-right: 4px; }
+pre { background: #fff; border: 1px solid var(--line); padding: 10px; overflow-x: auto; font-size: 0.85rem; }
+svg text { font: 12px system-ui, Arial, sans-serif; fill: var(--fg); }
+.question { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent); padding: 12px 16px; margin: 16px 0; }
+.q-label { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.q-text { font-size: 1.1rem; font-weight: 600; margin: 2px 0 10px; }
+.steps li { margin: 4px 0; }
+.choices button.primary { background: var(--accent); color: #fff; }
+.choices button.primary:hover { background: #174a85; }
+.choices button:disabled { opacity: 0.4; cursor: default; }
+.answer { background: #fff; border: 2px solid var(--accent); padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+.answer .big { font-size: 1.15rem; font-weight: 700; margin: 0 0 8px; }
+.badge { display: inline-block; font-size: 0.8rem; padding: 1px 7px; border-radius: 10px; border: 1px solid; white-space: nowrap; font-weight: 600; }
+.badge.ok { color: #0a5c2a; border-color: #0a5c2a; background: #e8f5ec; }
+.badge.weak { color: #6b5200; border-color: #b08900; background: #fff6d6; }
+.badge.optimistic, .badge.out { color: #8a0019; border-color: #8a0019; background: #fdecef; }
+.badge.conservative { color: #1f4f8a; border-color: #1f4f8a; background: #e8f0fa; }
+.badge.none { color: #555; border-color: #888; background: #f2f2f2; }
+table.keyin input { width: 8.5em; }
+#viaMap svg, #sensChart svg, #simResults svg { max-width: 760px; display: block; }
+details { margin: 16px 0; }
+summary { cursor: pointer; font-weight: 600; }
+@media (max-width: 600px) {
+  body { font-size: 14px; }
+  input[type=number] { width: 7em; }
+}
+.badge.projection { color: #5b2a86; border-color: #5b2a86; background: #f3ecfa; }
+ul.bets li { margin: 6px 0; }

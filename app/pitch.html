@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Space-Made Heart Cells</title>
+<style>
+  :root {
+    --bg: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --line: #deddd8; --card: #ffffff;
+    --earth: #2a78d6; --space: #eb6834; --good: #0a7a2f; --good-bg: #e6f4ea; --bad: #8a0019; --bad-bg: #fdecef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --line: #383835; --card: #222220;
+      --earth: #3987e5; --space: #d95926; --good: #6fd38e; --good-bg: #173322; --bad: #ff9aa8; --bad-bg: #3a1a20;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; overflow-x: hidden; background: var(--bg); color: var(--ink); font: 18px/1.4 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px; min-height: 100vh; display: flex; flex-direction: column; gap: 18px; }
+  h1 { font-size: clamp(1.5rem, 3.4vw, 2.4rem); margin: 0; line-height: 1.15; }
+  .sub { color: var(--ink2); margin: 4px 0 0; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .steps button { font: inherit; font-size: 0.9rem; text-align: left; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--line);
+    background: var(--card); color: var(--ink2); cursor: pointer; line-height: 1.25; }
+  .steps button .n { display: block; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .steps button[aria-current="step"] { border-color: var(--ink); color: var(--ink); }
+  .steps button.done { color: var(--ink); }
+  button:focus-visible, input:focus-visible { outline: 3px solid #f2a900; outline-offset: 2px; }
+  .story { font-size: clamp(1.1rem, 2.2vw, 1.5rem); font-weight: 600; margin: 0; min-height: 2.8em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .bars { display: grid; grid-template-columns: max-content 1fr; gap: 14px 16px; align-items: center; }
+  .label { font-weight: 700; font-size: 1.05rem; }
+  .label small { display: block; font-weight: 400; color: var(--ink2); font-size: 0.8rem; }
+  .track { position: relative; height: 56px; }
+  .bar { position: absolute; left: 0; top: 0; height: 100%; border-radius: 0 6px 6px 0; transition: width 0.7s cubic-bezier(.2,.8,.2,1); min-width: 4px; }
+  .bar.earth { background: var(--earth); }
+  .bar.space { background: var(--space); }
+  .val { position: absolute; top: 50%; transform: translateY(-50%); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.7rem);
+    white-space: nowrap; transition: left 0.7s cubic-bezier(.2,.8,.2,1); padding-left: 10px; color: var(--ink); }
+  .val.inside { transform: translate(-100%, -50%); padding: 0 12px 0 0; color: #ffffff; }
+  .axisnote { color: var(--ink2); font-size: 0.85rem; margin-top: 10px; }
+  .verdict { display: inline-block; font-size: clamp(1.2rem, 2.8vw, 1.9rem); font-weight: 800; padding: 8px 18px; border-radius: 999px; }
+  .verdict.win { color: var(--good); background: var(--good-bg); }
+  .verdict.lose { color: var(--bad); background: var(--bad-bg); }
+  .why { color: var(--ink2); font-size: 0.95rem; margin: 10px 0 0; }
+  .nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .nav button { font: inherit; font-weight: 700; padding: 12px 22px; border-radius: 10px; border: 2px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+  .nav button.secondary { background: transparent; color: var(--ink); }
+  .nav button:disabled { opacity: 0.3; cursor: default; }
+  .nav .hint { color: var(--ink2); font-size: 0.85rem; }
+  .conditions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .cond { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .cond .big { font-size: clamp(1.4rem, 3vw, 2.1rem); font-weight: 800; }
+  .cond .what { color: var(--ink2); font-size: 0.9rem; }
+  .cond .now { font-size: 0.85rem; margin-top: 4px; }
+  .sliders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .sliders label { display: block; font-weight: 700; font-size: 0.95rem; }
+  .sliders output { font-weight: 800; }
+  .sliders input { width: 100%; accent-color: var(--space); }
+  .sliders small { color: var(--ink2); display: block; font-size: 0.8rem; }
+  footer { color: var(--ink2); font-size: 0.8rem; margin-top: auto; }
+  footer a { color: inherit; }
+  [hidden] { display: none !important; }
+  @media (max-width: 700px) {
+    .steps { grid-template-columns: 1fr 1fr; }
+    .conditions, .sliders { grid-template-columns: 1fr; }
+    .bars { grid-template-columns: 1fr; gap: 4px; }
+    .track { height: 44px; margin-bottom: 8px; }
+    .val { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Heart cells made in space can be cheaper than heart cells made on Earth.</h1>
+    <p class="sub">Cost to make one patient's dose of heart-muscle cells (about 150 million cells), Earth vs orbit.</p>
+  </header>
+
+  <nav class="steps" aria-label="Story steps" id="steps"></nav>
+
+  <p class="story" id="story" aria-live="polite"></p>
+
+  <section class="card" aria-label="Cost comparison">
+    <div class="bars">
+      <div class="label">Made on Earth<small>best 3D bioreactor today</small></div>
+      <div class="track"><div class="bar earth" id="barE"></div><div class="val" id="valE"></div></div>
+      <div class="label">Made in space<small id="spaceSub">microgravity</small></div>
+      <div class="track"><div class="bar space" id="barS"></div><div class="val" id="valS"></div></div>
+    </div>
+    <div style="margin-top:16px"><span class="verdict" id="verdict"></span></div>
+    <p class="why" id="why"></p>
+  </section>
+
+  <section id="finale" hidden>
+    <div class="conditions" id="conditions"></div>
+    <div class="card" style="margin-top:12px">
+      <p style="margin:0 0 12px;font-weight:700">Try it: move a slider and watch the bars.</p>
+      <div class="sliders">
+        <div><label for="sYield">Extra heart cells grown in space: <output id="oYield"></output></label>
+          <input type="range" id="sYield" min="1" max="4" step="0.1"><small>Lab evidence (simulated microgravity): 1.5x to 4x</small></div>
+        <div><label for="sLaunch">Rocket price: <output id="oLaunch"></output></label>
+          <input type="range" id="sLaunch" min="200" max="20000" step="100"><small>Space Station today: $20,000/kg. Rideshare: $6,500/kg. Starship goal: $100 to $200/kg</small></div>
+        <div><label for="sReturn">Return trip per batch: <output id="oReturn"></output></label>
+          <input type="range" id="sReturn" min="20000" max="300000" step="5000"><small>Space Station today: about $200,000</small></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="nav">
+    <button class="secondary" id="prev">&larr; Back</button>
+    <button id="next">Next &rarr;</button>
+    <span class="hint">Tip: use the arrow keys</span>
+  </div>
+
+  <footer>
+    Projection, not a forecast. Earth costs and biology come from published studies; the space steps are bets that today's evidence points toward but has not yet proven in orbit.
+    Dose size: 150 million cells (Heartseed HS-001 high dose). Every number and source: <a href="index.html">full calculator</a> and Stem_Cell_Microeconomics.xlsx.
+  </footer>
+</main>
+
+<script src="engine.js?v=4"></script>
+<script src="scenario_data.js?v=4"></script>
+<script>
+(function () {
+  'use strict';
+  var E = SCEngine, DOSE = 150; // units of 1 million cells per patient dose
+  var today = E.pointValues(SCiPSC.params), future = E.pointValues(SCViable.params);
+
+  var STEPS = [
+    { title: 'Today', short: 'Space Station today',
+      story: 'Today, making these cells on the Space Station costs far more than making them on Earth.',
+      why: 'Astronaut time, launch and the trip home are expensive, and the cells grow about the same as on Earth.', ids: [] },
+    { title: 'Microgravity', short: 'Cells grow better floating free',
+      story: 'Step 1: floating freely in microgravity, each stem cell becomes more working heart cells (assumed 3x).',
+      why: 'Lab experiments that imitate microgravity on Earth produced 1.5x to 4x more heart cells per stem cell than the best 3D culture on Earth (Jha et al. 2016). Space Station experiments also saw much faster growth (Rampoldi et al. 2022).',
+      ids: ['r_g', 'r_q'] },
+    { title: 'Robot factory', short: 'Automated factory in orbit',
+      story: 'Step 2: an automated factory satellite runs the batch, so no astronaut time is needed.',
+      why: 'Uncrewed capsules that make products in orbit and fly them home already exist (Varda). Astronaut time on the Space Station costs about $130,000 per hour.',
+      ids: ['S_labor', 'S_facility', 'S_equipment', 'p_S'] },
+    { title: 'Cheaper rides', short: 'Cheaper rockets and return trips',
+      story: 'Step 3: cheaper rockets and shared return capsules: space wins.',
+      why: 'Assumed $1,000/kg to orbit (realistic estimate for Starship-era rockets; the Starship goal is $100 to $200/kg). Return trip assumed at about $100,000 per batch: a $5 million capsule flight shared by about 50 batches.',
+      ids: ['L', 'C_return'] }
+  ];
+
+  var step = 0, custom = null;
+  var maxScale = 0;
+  function valuesAt(k) {
+    var v = {}, id; for (id in today) v[id] = today[id];
+    for (var i = 1; i <= k; i++) STEPS[i].ids.forEach(function (id) { v[id] = future[id]; });
+    return v;
+  }
+  // Fixed scale across all steps so bars visibly shrink as conditions are met.
+  for (var i = 0; i < STEPS.length; i++) { var r0 = E.compute(valuesAt(i)); maxScale = Math.max(maxScale, r0.c_E * DOSE, r0.c_S * DOSE); }
+  // Self-check: the last step must reproduce the full viability scenario exactly.
+  (function () { var a = E.compute(valuesAt(3)), b = E.compute(future); if (Math.abs(a.c_S - b.c_S) > 1e-9 * b.c_S) console.error('Pitch steps do not reproduce the viability scenario'); })();
+
+  function money(x) { return '$' + Math.round(x).toLocaleString('en-US'); }
+
+  var stepsEl = document.getElementById('steps');
+  STEPS.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.innerHTML = '<span class="n">' + (i === 0 ? 'Start' : 'Step ' + i) + '</span>' + s.short;
+    b.onclick = function () { go(i); };
+    stepsEl.appendChild(b);
+  });
+
+  function render() {
+    var v = custom || valuesAt(step), r = E.compute(v);
+    var e = r.c_E * DOSE, s = r.c_S * DOSE;
+    var scale = Math.max(maxScale, e, s);
+    setBar('E', e, scale); setBar('S', s, scale);
+    var vd = document.getElementById('verdict');
+    if (s < e) { vd.className = 'verdict win'; vd.textContent = '✓ Space is ' + Math.round((1 - s / e) * 100) + '% cheaper'; }
+    else { vd.className = 'verdict lose'; vd.textContent = 'Space costs ' + (s / e >= 1.95 ? (s / e).toFixed(1) + 'x as much' : Math.round((s / e - 1) * 100) + '% more'); }
+    document.getElementById('story').textContent = custom ? 'Your scenario: change the sliders to explore when space wins.' : STEPS[step].story;
+    document.getElementById('why').textContent = custom ? '' : STEPS[step].why;
+    document.getElementById('spaceSub').textContent = step === 0 ? 'on the Space Station today' : 'with ' + STEPS.slice(1, step + 1).map(function (x) { return x.title.toLowerCase(); }).join(' + ');
+    [].forEach.call(stepsEl.children, function (b, i) {
+      if (i === step) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+      b.classList.toggle('done', i < step);
+    });
+    document.getElementById('prev').disabled = step === 0;
+    document.getElementById('next').disabled = step === STEPS.length - 1;
+    var fin = document.getElementById('finale');
+    fin.hidden = step !== STEPS.length - 1;
+    if (!fin.hidden) renderConditions(r, v);
+  }
+  function setBar(k, val, scale) {
+    var pct = isFinite(val) ? Math.max(0.5, val / scale * 96) : 96;
+    document.getElementById('bar' + k).style.width = pct + '%';
+    var lab = document.getElementById('val' + k);
+    lab.textContent = isFinite(val) ? money(val) + ' per dose' : 'no usable output';
+    // Label sits just outside the bar if it fits there, otherwise inside (right-aligned, white).
+    var W = lab.parentNode.clientWidth, lw = lab.offsetWidth, barW = pct / 100 * W;
+    lab.classList.toggle('inside', barW + lw > W && barW >= lw);
+    lab.style.left = pct + '%';
+    document.getElementById('bar' + k).title = (k === 'E' ? 'Earth: ' : 'Space: ') + lab.textContent;
+  }
+  function renderConditions(r, v) {
+    var c = [
+      { big: 'up to ' + money(r.L_max) + '/kg', what: 'Rocket price at which space still wins', now: 'Assumed: ' + money(v.L) + '/kg', ok: v.L <= r.L_max },
+      { big: 'up to ' + money(r.C_return_max), what: 'Return-trip cost per batch at which space still wins', now: 'Assumed: ' + money(v.C_return), ok: v.C_return <= r.C_return_max },
+      { big: 'at least ' + r.r_g_min.toFixed(1) + 'x', what: 'Extra heart cells grown in space needed to break even', now: 'Assumed: ' + v.r_g.toFixed(1) + 'x', ok: v.r_g >= r.r_g_min }
+    ];
+    document.getElementById('conditions').innerHTML = c.map(function (x) {
+      var big = x.big.indexOf('-') >= 0 ? 'not possible here' : x.big;
+      return '<div class="cond"><div class="what">' + x.what + '</div><div class="big">' + big + '</div><div class="now">' + (x.ok ? '✓ ' : '✗ ') + x.now + '</div></div>';
+    }).join('');
+  }
+
+  function go(k) { step = Math.max(0, Math.min(STEPS.length - 1, k)); custom = null; syncSliders(); render(); }
+  document.getElementById('next').onclick = function () { go(step + 1); };
+  document.getElementById('prev').onclick = function () { go(step - 1); };
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(step + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(step - 1); }
+  });
+
+  var sY = document.getElementById('sYield'), sL = document.getElementById('sLaunch'), sR = document.getElementById('sReturn');
+  function syncSliders() { var v = valuesAt(3); sY.value = v.r_g; sL.value = v.L; sR.value = v.C_return; labels(); }
+  function labels() {
+    document.getElementById('oYield').textContent = Number(sY.value).toFixed(1) + 'x';
+    document.getElementById('oLaunch').textContent = money(sL.value) + '/kg';
+    document.getElementById('oReturn').textContent = money(sR.value);
+  }
+  [sY, sL, sR].forEach(function (el) {
+    el.addEventListener('input', function () {
+      custom = valuesAt(3); custom.r_g = Number(sY.value); custom.L = Number(sL.value); custom.C_return = Number(sR.value);
+      labels(); render();
+    });
+  });
+
+  window.addEventListener('resize', render);
+  go(0);
+})();
+</script>
+</body>
+</html>

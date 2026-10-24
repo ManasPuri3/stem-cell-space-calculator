@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microgravity Stem Cell Calculator</title>
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+<header>
+  <h1>Stem Cell Manufacturing in Microgravity: Feasibility Calculator</h1>
+  <p class="sub">A transparent scenario model, not a forecast, clinical tool, or investment recommendation. Model <span id="modelVersion"></span>.</p>
+  <nav role="tablist" aria-label="Views">
+    <button role="tab" data-view="overview" aria-selected="true">Overview</button>
+    <button role="tab" data-view="assumptions">Assumptions</button>
+    <button role="tab" data-view="evidence">Evidence</button>
+    <button role="tab" data-view="results">Results</button>
+    <button role="tab" data-view="methods">Methods</button>
+    <a href="pitch.html" style="margin-left:auto;align-self:center">Pitch view &rarr;</a>
+  </nav>
+</header>
+<main>
+  <section id="view-overview" class="view">
+    <div class="question">
+      <p class="q-label">The question</p>
+      <p class="q-text">What is the first product that will be fundamentally cheaper to make in microgravity, and at what launch, manufacturing and return costs is it viable?</p>
+      <p class="q-label">The thesis being tested</p>
+      <p>Stem cells floating freely in microgravity avoid the stresses of flat 2D dishes, so <strong>a larger share of each batch turns into the correct, working cell type</strong>. Fewer wasted cells per batch means a lower cost per good cell.</p>
+    </div>
+
+    <h2>How the calculator works</h2>
+    <ol class="steps">
+      <li><strong>Cost per batch.</strong> Add up everything one batch costs: cells, media, staff, facility; in space also launch, orbital lab fees and the return trip.</li>
+      <li><strong>Good cells per batch.</strong> Starting cells x growth x <em>share that come out as the correct type</em> x chance the batch passes testing (x survival of the trip home, for space).</li>
+      <li><strong>Cost per good cell</strong> = cost per batch / good cells per batch. Compare Earth with space.</li>
+      <li><strong>Check the assumptions.</strong> Each input is rated against the published evidence so you can see which numbers are solid and which are guesses.</li>
+    </ol>
+
+    <div class="choices">
+      <button id="loadViable" class="primary">Space viability case: heart cells on an autonomous free-flyer</button>
+      <button id="loadIpsc">Heart cells with today's ISS logistics</button>
+      <button id="loadLiterature">Blood stem cells (HSC) scenario</button>
+      <button id="loadIllustrative">Simple hypothetical example</button>
+      <button id="loadTri">Hypothetical + uncertainty</button>
+      <button id="loadEmpty">Start empty</button>
+    </div>
+    <p class="scenario-name">Current scenario: <strong id="scenarioName">none loaded</strong></p>
+    <div id="scenarioBanner"></div>
+
+    <div id="answer"></div>
+    <h2>What would it take for space to win?</h2>
+    <p class="note">Each line changes one thing and holds everything else at its current value.</p>
+    <div id="viability"></div>
+    <h2>Viability map: launch price vs return cost</h2>
+    <div id="viaMap"></div>
+
+    <h2>Key assumptions and how reasonable they are</h2>
+    <p class="note">Edit any value here or on the Assumptions tab (same numbers). Each input is compared with the range found in published evidence. Ratings: <span class="badge ok">&#10003; In range</span> <span class="badge weak">~ Guess</span> <span class="badge optimistic">&#9650; Optimistic</span> <span class="badge conservative">&#9660; Conservative</span> <span class="badge none">? No evidence</span> <span class="badge projection">&#9654; Future bet</span></p>
+    <div id="reasonSummary"></div>
+    <div id="keyInputs"></div>
+    <h2>What the answer depends on most</h2>
+    <div id="hinges"></div>
+
+    <details>
+      <summary>Full cost and output table</summary>
+      <div class="warn" role="note">Equivalence assumed: Cost comparisons assume that the two processes produce biologically equivalent qualified output.</div>
+      <div id="detResults"></div>
+    </details>
+    <h2>Simulation status</h2>
+    <div id="simStatusOverview">No simulation has been run.</div>
+    <h2>Key limitations</h2>
+    <ul>
+      <li>The thesis lever (quality ratio r_q) has only been measured in small lab studies, several of them using simulated microgravity on Earth. No study has run a manufacturing-scale batch in orbit.</li>
+      <li>Earth already has 3D suspension culture (stirred bioreactors). The fair comparison is space vs the <em>best</em> Earth 3D process, not vs flat dishes.</li>
+      <li>The production comparison still includes orbital facility costs; it is not proof of an intrinsic microgravity effect.</li>
+      <li>Inputs are treated as independent unless a rule links them; g_S and q_S are derived from ratios.</li>
+      <li>Costs are expected expenditure per attempted batch (USD, 2026). No inflation or currency conversion.</li>
+    </ul>
+  </section>
+
+  <section id="view-assumptions" class="view" hidden>
+    <h2>Assumptions</h2>
+    <p>Edit point estimates and choose a distribution for each input. Fixed = one value. Triangular = min / mode / max (user judgment, not a fitted distribution). Uniform = min / max with equal density (not a claim that a paper establishes equal likelihood). Units shown next to each value.</p>
+    <div id="validation" aria-live="polite"></div>
+    <div id="paramTables"></div>
+  </section>
+
+  <section id="view-evidence" class="view" hidden>
+    <h2>Evidence (read-only in this MVP)</h2>
+    <p>Sources are an inventory, not votes. No source automatically sets a distribution; the summaries need review before quantitative use. Links open in a new tab and are not fetched by the app.</p>
+    <div id="evidenceList"></div>
+  </section>
+
+  <section id="view-results" class="view" hidden>
+    <h2>Monte Carlo simulation</h2>
+    <div class="simctl">
+      <label>Draws <select id="draws"><option>1000</option><option selected>10000</option><option>50000</option></select></label>
+      <label>Seed <input id="seed" type="number" value="20261024" step="1"></label>
+      <button id="runSim">Run simulation</button>
+      <button id="cancelSim" disabled>Cancel</button>
+      <progress id="simProgress" max="1" value="0" hidden></progress>
+    </div>
+    <div id="simResults"><p>No simulation has been run.</p></div>
+    <h2>Deterministic break-even</h2>
+    <div id="breakEven"></div>
+    <h2>Chart: local one-at-a-time sensitivity (deterministic)</h2>
+    <p class="note">Each input with a range is moved to its low and high value while every other input stays at its point estimate; derived g_S and q_S are recomputed. Bars show the resulting <strong>space minus Earth delivered cost (USD per unit)</strong>; left of the dashed line means space is cheaper. This is local sensitivity, not causal attribution or a variance decomposition.</p>
+    <div id="sensChart"></div>
+    <div id="sensTable"></div>
+  </section>
+
+  <section id="view-methods" class="view" hidden>
+    <h2>Methods</h2>
+    <h3>Output per batch</h3>
+    <pre>g_S = g_E x r_g          q_S = q_E x r_q          (derived once; never sampled separately)
+Y_E = N0 x g_E x q_E / U
+Y_S_pre = N0 x g_S x q_S / U          Y_S = Y_S_pre x s
+Q_E = p_E x Y_E      Q_S_pre = p_S x Y_S_pre      Q_S = p_S x Y_S</pre>
+    <p>q is the fraction of cells in a successful batch that meet the qualification; p is the probability the whole batch is releasable; s is retention through return, storage and handling (viability and function together; never multiplied twice).</p>
+    <h3>Costs per attempted batch</h3>
+    <pre>C_E_prod = sum of Earth production lines        C_E_del = C_E_prod + Earth delivery
+C_S_prod = sum of space production lines        C_launch = L x M
+C_S_del = C_S_prod + C_launch + return/recovery + other delivery
+c_E_prod = C_E_prod / Q_E      c_S_prod = C_S_prod / Q_S_pre
+c_E = C_E_del / Q_E            c_S = C_S_del / Q_S          Relative savings = 1 - c_S / c_E</pre>
+    <p>Space is strictly cheaper when c_S &lt; c_E. A tie is declared when |c_S - c_E| &lt;= 1e-9 x max(c_S, c_E). Zero expected output with positive cost gives "No usable output" (infinite cost flag).</p>
+    <h3>Break-even</h3>
+    <pre>L_max = (c_E x Q_S - C_S_prod - C_return - C_other_delivery) / M        (not applicable when M = 0)
+r_g_min = C_S_del x U / (c_E x p_S x N0 x g_E x q_S x s)                 (holding everything else fixed)
+Required output ratio: Q_S / Q_E must exceed C_S_del / C_E_del</pre>
+    <h3>Simulation</h3>
+    <p>Pseudorandom generator: mulberry32 seeded with the user seed; stochastic inputs are sampled in a fixed order, so the same inputs and seed reproduce identical results. Triangular draws use the inverse CDF. Each draw represents one possible set of uncertain long-run parameters, and cost is expected expenditure divided by expected qualified output within that draw (single failed batches are not simulated). All stochastic inputs are independent; the only dependency rules are the derived g_S and q_S. Percentile bands are <strong>model percentile ranges</strong>, not confidence intervals. If a percentile falls in an infinite part of the distribution, it reads "No finite bound".</p>
+    <h3>Validation</h3>
+    <p>Costs, masses, counts and expansion factors must be &gt;= 0; fractions and probabilities in [0, 1]; U &gt; 0; triangular min &lt;= mode &lt;= max. max(q_E) x max(r_q) must be &lt;= 1; q_S is never silently clipped.</p>
+    <h3>Not built in this MVP (deferred)</h3>
+    <p>Discrete distributions and joint biology profiles, duration costing and supply-mass rules, evidence editing, scenario persistence, JSON/CSV export, print report, heatmap, cost-ratio histogram, numerical (non-closed-form) break-even search.</p>
+  </section>
+</main>
+<script src="engine.js?v=4"></script>
+<script src="scenarios.js?v=4"></script>
+<script src="scenario_data.js?v=4"></script>
+<script src="app.js?v=4"></script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engine Tests</title>
+<style>
+  body { font-family: system-ui, Arial, sans-serif; margin: 24px; background: #fff; color: #111; }
+  .pass { color: #0a6b2d; } .fail { color: #b00020; font-weight: 600; }
+  li { margin: 4px 0; } #summary { font-size: 1.2em; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>Automated engine tests (PRD section 11 &amp; 14)</h1>
+<p id="summary">Running...</p>
+<ol id="out"></ol>
+<script src="engine.js"></script>
+<script src="scenarios.js"></script>
+<script src="scenario_data.js"></script>
+<script>
+(function () {
+  var E = SCEngine, results = [];
+  function close(a, b, tol) { tol = tol || 1e-9; return Math.abs(a - b) <= tol * Math.max(1, Math.abs(b)); }
+  function test(name, fn) {
+    try { var msg = fn(); results.push({ name: name, ok: msg === true, msg: msg === true ? '' : msg }); }
+    catch (e) { results.push({ name: name, ok: false, msg: 'threw ' + e.message }); }
+  }
+  function expect(cond, msg) { if (!cond) throw new Error(msg); }
+  function vals(mod) { var p = SCScenarios.illustrative.build(); if (mod) mod(p); return p; }
+  function run(mod) { return E.compute(E.pointValues(vals(mod))); }
+  function set(p, id, v) { p[id] = { value: v, dist: { type: 'fixed' } }; }
+
+  test('AT1: PRD 11 deterministic example', function () {
+    var r = run();
+    expect(close(r.Y_E, 10), 'Earth output ' + r.Y_E);
+    expect(close(r.Y_S_pre, 20), 'space pre-return ' + r.Y_S_pre);
+    expect(close(r.Y_S, 16), 'space delivered output ' + r.Y_S);
+    expect(close(r.c_E, 10000), 'Earth cost ' + r.c_E);
+    expect(close(r.c_S_prod, 10000), 'space production cost ' + r.c_S_prod);
+    expect(close(r.C_S_del, 350000), 'C_S_del ' + r.C_S_del);
+    expect(close(r.c_S, 21875), 'space delivered cost ' + r.c_S);
+    expect(close(r.savings, -1.1875), 'savings ' + r.savings);
+    expect(close(r.r_g_min, 4.375), 'r_g_min ' + r.r_g_min);
+    expect(close(r.L_max, -1800), 'L_max ' + r.L_max);
+    expect(r.L_status === 'not_competitive', 'status ' + r.L_status);
+    expect(r.category === 'earth', 'category ' + r.category);
+    return true;
+  });
+  test('AT2: r_g = 5 gives $8,750/unit, 12.5% savings, L_max $3,000/kg, 40 units', function () {
+    var r = run(function (p) { set(p, 'r_g', 5); });
+    expect(close(r.Y_S, 40), 'output ' + r.Y_S);
+    expect(close(r.c_S, 8750), 'cost ' + r.c_S);
+    expect(close(r.savings, 0.125), 'savings ' + r.savings);
+    expect(close(r.L_max, 3000), 'L_max ' + r.L_max);
+    expect(r.category === 'space', 'category');
+    return true;
+  });
+  test('AT3: equal process inputs, no transport, s=1 -> equal costs (tie)', function () {
+    var r = run(function (p) { set(p, 'r_g', 1); set(p, 's', 1); set(p, 'S_other', 100000); set(p, 'L', 0); set(p, 'M', 0); set(p, 'C_return', 0); });
+    expect(close(r.c_S, r.c_E), r.c_S + ' vs ' + r.c_E);
+    expect(r.category === 'tie', 'category ' + r.category);
+    return true;
+  });
+  test('AT4: increasing launch price never reduces delivered space cost', function () {
+    var prev = -Infinity;
+    for (var L = 0; L <= 50000; L += 2500) {
+      var r = run(function (p) { set(p, 'L', L); });
+      expect(r.c_S >= prev, 'decreased at L=' + L); prev = r.c_S;
+    }
+    return true;
+  });
+  test('AT5: lowering retention never improves delivered space cost', function () {
+    var prev = -Infinity;
+    for (var s = 1; s >= 0.05; s -= 0.05) {
+      var r = run(function (p) { set(p, 's', s); });
+      expect(r.c_S >= prev - 1e-9, 'improved at s=' + s); prev = r.c_S;
+    }
+    return true;
+  });
+  test('AT6: zero launch price keeps return and orbital production costs', function () {
+    var r = run(function (p) { set(p, 'L', 0); });
+    expect(close(r.C_S_del, 250000), 'C_S_del ' + r.C_S_del);
+    return true;
+  });
+  test('AT7: all inputs fixed -> every draw equals deterministic result', function () {
+    var p = vals(); var d = E.compute(E.pointValues(p));
+    var s = E.simulate(p, { draws: 1000, seed: 7, keepDraws: true });
+    for (var i = 0; i < s.drawList.length; i++) {
+      expect(s.drawList[i].c_S === d.c_S && s.drawList[i].c_E === d.c_E, 'draw ' + i + ' differs');
+    }
+    expect(s.counts.earth === 1000, 'categories');
+    return true;
+  });
+  test('AT8: fixed seed reproduces identical results; different seed differs', function () {
+    var p = SCScenarios.illustrativeTri.build();
+    var a = E.simulate(p, { draws: 5000, seed: 42, keepDraws: true });
+    var b = E.simulate(p, { draws: 5000, seed: 42, keepDraws: true });
+    var c = E.simulate(p, { draws: 5000, seed: 43, keepDraws: true });
+    expect(JSON.stringify(a.drawList) === JSON.stringify(b.drawList), 'not reproducible');
+    expect(JSON.stringify(a.drawList) !== JSON.stringify(c.drawList), 'seed ignored');
+    // round-trip of the input snapshot through JSON does not change results
+    var p2 = JSON.parse(JSON.stringify(p));
+    var d = E.simulate(p2, { draws: 5000, seed: 42, keepDraws: true });
+    expect(JSON.stringify(a.drawList) === JSON.stringify(d.drawList), 'JSON round trip changed results');
+    return true;
+  });
+  test('AT9: triangular r_g(1,2,6) -> P(space cheaper) ~ 13.203125% (200,000 draws, seed 20261024, tol +/-0.4 pp ~ 5 SE)', function () {
+    var s = E.simulate(SCScenarios.illustrativeTri.build(), { draws: 200000, seed: 20261024 });
+    var frac = s.counts.space / s.draws;
+    expect(Math.abs(frac - 0.13203125) < 0.004, 'got ' + (frac * 100).toFixed(4) + '%');
+    return true;
+  });
+  test('AT9b: triangular sampler analytic CDF check P(X>4.375)', function () {
+    var rng = E.mulberry32(1), n = 200000, c = 0;
+    for (var i = 0; i < n; i++) if (E.sampleDist({ type: 'triangular', min: 1, mode: 2, max: 6 }, 2, rng()) > 4.375) c++;
+    expect(Math.abs(c / n - 0.13203125) < 0.004, 'got ' + c / n);
+    return true;
+  });
+  test('AT10: incompatible qualification ranges fail validation', function () {
+    var p = vals(function (p) { p.q_E = { value: 0.5, dist: { type: 'triangular', min: 0.3, mode: 0.5, max: 0.8 } };
+      p.r_q = { value: 1, dist: { type: 'triangular', min: 0.8, mode: 1, max: 1.5 } }; });
+    var errs = E.validate(p);
+    expect(errs.length === 1 && /exceeds 1/.test(errs[0]), JSON.stringify(errs));
+    return true;
+  });
+  test('AT10b: negative cost and fraction > 1 rejected; bad triangular rejected', function () {
+    expect(E.validate(vals(function (p) { set(p, 'L', -1); })).length === 1, 'negative');
+    expect(E.validate(vals(function (p) { set(p, 's', 1.2); })).length === 1, 'fraction');
+    expect(E.validate(vals(function (p) { p.g_E = { value: 20, dist: { type: 'triangular', min: 30, mode: 20, max: 40 } }; })).length >= 1, 'triangular order');
+    expect(E.validate(vals()).length === 0, 'valid example rejected');
+    return true;
+  });
+  test('AT11: zero-output cases categorized correctly', function () {
+    var a = run(function (p) { set(p, 's', 0); });
+    expect(a.c_S === Infinity && a.category === 'earth' && !a.baselineFailure, 'space zero output ' + a.category);
+    var b = run(function (p) { set(p, 'p_E', 0); });
+    expect(b.c_E === Infinity && b.category === 'space' && b.baselineFailure, 'earth zero output');
+    var c = run(function (p) { set(p, 'p_E', 0); set(p, 'p_S', 0); });
+    expect(c.category === 'unavailable', 'both zero should be unavailable, got ' + c.category);
+    expect(isNaN(c.savings), 'savings must be undefined');
+    // In a simulation, every draw lands in exactly one category and infinite quantiles read as Infinity
+    var p = vals(function (p) { p.s = { value: 0.5, dist: { type: 'uniform', min: 0, max: 1 } }; set(p, 'p_S', 0); });
+    var s = E.simulate(p, { draws: 1000, seed: 3 });
+    var tot = s.counts.space + s.counts.tie + s.counts.earth + s.counts.unavailable;
+    expect(tot === 1000, 'categories sum to ' + tot);
+    expect(s.space.p50 === Infinity && s.counts.infS === 1000, 'infinite quantile not reported');
+    return true;
+  });
+  test('AT12: derived g_S and q_S computed once from g_E*r_g and q_E*r_q', function () {
+    var r = run(function (p) { set(p, 'r_q', 0.9); });
+    expect(close(r.g_S, 40) && close(r.q_S, 0.45), r.g_S + ' ' + r.q_S);
+    return true;
+  });
+  test('Zero Earth cost with positive output: savings undefined, direct comparison works', function () {
+    var r = run(function (p) { set(p, 'E_other', 0); });
+    expect(r.c_E === 0 && isNaN(r.savings) && r.category === 'earth', JSON.stringify([r.c_E, r.savings, r.category]));
+    return true;
+  });
+  test('M = 0 -> launch price ceiling not applicable (no divide by zero)', function () {
+    var r = run(function (p) { set(p, 'M', 0); });
+    expect(r.L_status === 'not_applicable' && isNaN(r.L_max), r.L_status);
+    return true;
+  });
+  test('Quantile helper: no finite bound when quantile reaches the infinite tail', function () {
+    var s = [1, 2, 3, Infinity, Infinity];
+    expect(E.quantile(s, 0.5) === 3 && E.quantile(s, 0.95) === Infinity, 'quantile');
+    return true;
+  });
+  test('Viability thresholds: PRD example (hand-calculated)', function () {
+    var r = run();
+    // r_q_min = 350000*1e6 / (10000*1*1e6*40*0.5*0.8) = 2.1875; cap = 1/0.5 = 2 -> quality alone cannot reach break-even
+    expect(close(r.r_q_min, 2.1875), 'r_q_min ' + r.r_q_min);
+    expect(close(r.r_q_cap, 2), 'cap ' + r.r_q_cap);
+    expect(close(r.c_S_bestq, 10937.5), 'best-quality cost ' + r.c_S_bestq);
+    expect(close(r.budget, 160000), 'budget ' + r.budget);
+    expect(close(r.C_S_prod_max, 10000), 'prod max ' + r.C_S_prod_max);
+    expect(close(r.C_return_max, -140000), 'return max ' + r.C_return_max);
+    var r5 = run(function (p) { set(p, 'r_g', 5); });
+    expect(close(r5.C_return_max, 100000) && close(r5.C_S_prod_max, 250000), 'r_g=5 budgets');
+    // consistency: setting each cost to its maximum gives a tie
+    var t = run(function (p) { set(p, 'r_g', 5); set(p, 'C_return', 100000); });
+    expect(t.category === 'tie', 'return at max should tie, got ' + t.category);
+    return true;
+  });
+  test('Setting r_q to r_q_min gives a tie (when feasible)', function () {
+    var base = run(function (p) { set(p, 'q_E', 0.2); });
+    var t = run(function (p) { set(p, 'q_E', 0.2); set(p, 'r_q', base.r_q_min); });
+    expect(base.r_q_min <= base.r_q_cap, 'should be feasible: ' + base.r_q_min + ' cap ' + base.r_q_cap);
+    expect(t.category === 'tie', 'category ' + t.category);
+    return true;
+  });
+  test('Direction and reasonableness labels', function () {
+    var p = vals();
+    expect(E.favorsSpace(p, 'r_q') === 1 && E.favorsSpace(p, 'L') === -1 && E.favorsSpace(p, 'E_other') === 1 && E.favorsSpace(p, 'E_delivery') === 1, 'directions');
+    expect(E.reasonableness(p, 'L', { low: 6500, high: 71800, status: 'measured in target system (price)' }).level === 'optimistic', 'cheap launch should be optimistic');
+    expect(E.reasonableness(p, 'L', { low: 1000, high: 3000, status: 'measured in target system (price)' }).level === 'ok', 'inside range');
+    expect(E.reasonableness(p, 'L', { low: 1000, high: 3000, status: 'speculative scenario' }).level === 'weak', 'weak range');
+    expect(E.reasonableness(p, 'r_q', { low: 1.5, high: 2, status: 'measured in another system' }).level === 'conservative', 'low r_q is conservative');
+    expect(E.reasonableness(p, 'r_q', undefined).level === 'none', 'none');
+    return true;
+  });
+  test('Projection evidence is labeled as a future bet, regardless of value', function () {
+    var p = vals();
+    expect(E.reasonableness(p, 'L', { low: 200, high: 6500, status: 'projection' }).level === 'projection', 'projection label');
+    expect(E.evidenceStrength('projection') === 'Projection (future bet)', 'strength');
+    return true;
+  });
+  [['HSC', self.SCLiterature], ['iPSC heart cells', self.SCiPSC], ['viability case', self.SCViable]].forEach(function (pair) {
+    var D = pair[1]; if (!D) return;
+    test('Spreadsheet cross-check (' + pair[0] + '): JS engine matches Python spreadsheet model', function () {
+      var r = E.compute(E.pointValues(D.params)), x = D.expected;
+      ['c_E', 'c_S', 'c_S_prod', 'Q_E', 'Q_S', 'L_max', 'r_g_min', 'r_q_min', 'r_q_cap', 'C_return_max', 'C_S_prod_max'].forEach(function (k) {
+        expect(close(r[k], x[k], 1e-9), k + ': JS ' + r[k] + ' vs Python ' + x[k]);
+      });
+      expect(E.validate(D.params).length === 0, 'scenario invalid: ' + E.validate(D.params).join('; '));
+      return true;
+    });
+  });
+
+  var out = document.getElementById('out'), pass = 0;
+  results.forEach(function (t) {
+    var li = document.createElement('li');
+    li.className = t.ok ? 'pass' : 'fail';
+    li.textContent = (t.ok ? 'PASS  ' : 'FAIL  ') + t.name + (t.msg ? ' -- ' + t.msg : '');
+    out.appendChild(li); if (t.ok) pass++;
+  });
+  var sum = document.getElementById('summary');
+  sum.textContent = pass + ' / ' + results.length + ' tests passed';
+  sum.className = pass === results.length ? 'pass' : 'fail';
+  self.TEST_RESULTS = { pass: pass, total: results.length, failures: results.filter(function (t) { return !t.ok; }) };
+})();
+</script>
+</body>
+</html>
